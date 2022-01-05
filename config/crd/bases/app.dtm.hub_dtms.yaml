@@ -36,10 +36,16 @@ spec:
           spec:
             description: DtmSpec defines the desired state of Dtm
             properties:
-              foo:
+              replicas:
                 description: Foo is an example field of Dtm. Edit dtm_types.go to
                   remove/update
+                format: int32
+                type: integer
+              version:
                 type: string
+            required:
+            - replicas
+            - version
             type: object
           status:
             description: DtmStatus defines the observed state of Dtm

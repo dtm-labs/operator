@@ -18,7 +18,8 @@ package controllers
 
 import (
 	"context"
-
+	appv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -36,10 +37,13 @@ type DtmReconciler struct {
 //+kubebuilder:rbac:groups=app.dtm.hub,resources=dtms,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=app.dtm.hub,resources=dtms/status,verbs=get;update;patch
 //+kubebuilder:rbac:groups=app.dtm.hub,resources=dtms/finalizers,verbs=update
+//+kubebuilder:rbac:groups=apps,resources=deployments,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups=core,resources=services,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups=core,resources=configmaps,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups=core,resources=pods,verbs=get;list;watch
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
-// TODO(user): Modify the Reconcile function to compare the state specified by
 // the Dtm object against the actual cluster state, and then
 // perform operations to make the cluster state reflect the state specified by
 // the user.
@@ -47,9 +51,34 @@ type DtmReconciler struct {
 // For more details, check Reconcile and its Result here:
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.10.0/pkg/reconcile
 func (r *DtmReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	_ = log.FromContext(ctx)
+	logger := log.FromContext(ctx)
 
-	// your logic here
+	// 检查 CR 是否存在
+	dtm := &dtmappv1.Dtm{}
+	if err := r.Get(ctx, req.NamespacedName, dtm); err != nil {
+		return ctrl.Result{}, client.IgnoreNotFound(err)
+	}
+
+	logger.Info("ensure dtm configmap")
+	cm := r.GetDtmConfigMap(dtm)
+	result, err := r.ensureConfigMap(ctx, cm)
+	if err != nil {
+		return *result, err
+	}
+
+	logger.Info("ensure dtm deployment")
+	deploy := r.GetDtmDeployment(dtm)
+	result, err = r.ensureDeployment(ctx, deploy)
+	if err != nil {
+		return *result, err
+	}
+
+	logger.Info("ensure dtm service")
+	svc := r.GetDtmService(dtm)
+	result, err = r.ensureService(ctx, svc)
+	if err != nil {
+		return *result, err
+	}
 
 	return ctrl.Result{}, nil
 }
@@ -58,5 +87,8 @@ func (r *DtmReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.R
 func (r *DtmReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&dtmappv1.Dtm{}).
+		Owns(&appv1.Deployment{}).
+		Owns(&corev1.Service{}).
+		Owns(&corev1.ConfigMap{}).
 		Complete(r)
 }

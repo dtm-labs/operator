@@ -3,4 +3,5 @@ kind: Dtm
 metadata:
   name: dtm-sample
 spec:
-  # Add fields here
+  replicas: 1
+  version: 1.8.4

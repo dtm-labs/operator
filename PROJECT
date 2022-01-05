@@ -1,0 +1,19 @@
+domain: dtm.hub
+layout:
+- go.kubebuilder.io/v3
+plugins:
+  manifests.sdk.operatorframework.io/v2: {}
+  scorecard.sdk.operatorframework.io/v2: {}
+projectName: dtm-operator
+repo: github.com/dtm-labs/operator
+resources:
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: dtm.hub
+  group: app
+  kind: Dtm
+  path: github.com/dtm-labs/operator/api/v1
+  version: v1
+version: "3"

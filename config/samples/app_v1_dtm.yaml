@@ -1,0 +1,6 @@
+apiVersion: app.dtm.hub/v1
+kind: Dtm
+metadata:
+  name: dtm-sample
+spec:
+  # Add fields here
